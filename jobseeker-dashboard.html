@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Seeker Dashboard - JobPortal Pro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <div class="dashboard-logo">JobPortal Pro - Job Seeker</div>
+            <div class="user-info">
+                <div class="user-avatar">J</div>
+                <span>Welcome, Job Seeker</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <!-- Profile Management Section -->
+            <div class="profile-section">
+                <h2 class="section-title">👤 Profile Management</h2>
+                <div class="profile-grid">
+                    <div>
+                        <div class="input-group">
+                            <label for="user-name">Full Name *</label>
+                            <input type="text" id="user-name" placeholder="Enter your full name">
+                        </div>
+                        <div class="input-group">
+                            <label for="user-email">Email Address</label>
+                            <input type="email" id="user-email" value="jobseeker@example.com" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label for="user-phone">Phone Number *</label>
+                            <input type="tel" id="user-phone" placeholder="Enter phone number">
+                        </div>
+                        <div class="input-group">
+                            <label for="user-location">Location *</label>
+                            <input type="text" id="user-location" placeholder="City, State, Country">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="input-group">
+                            <label for="user-experience">Experience Level</label>
+                            <select id="user-experience">
+                                <option value="">Select Experience</option>
+                                <option value="0-1">0-1 years (Fresher)</option>
+                                <option value="1-3">1-3 years</option>
+                                <option value="3-5">3-5 years</option>
+                                <option value="5-10">5-10 years</option>
+                                <option value="10+">10+ years</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="user-education">Education</label>
+                            <input type="text" id="user-education" placeholder="e.g., B.Tech Computer Science, BCA, MCA">
+                        </div>
+                        <div class="input-group">
+                            <label for="user-current-role">Current/Last Role</label>
+                            <input type="text" id="user-current-role" placeholder="e.g., Software Developer, Analyst">
+                        </div>
+                        <div class="input-group">
+                            <label for="user-salary">Expected Salary (LPA)</label>
+                            <input type="text" id="user-salary" placeholder="e.g., 5-8 LPA">
+                        </div>
+                        <button class="login-btn" onclick="saveProfile()">💾 Save Profile</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Skills Management Section -->
+            <div class="profile-section">
+                <h2 class="section-title">🛠️ Skills Management</h2>
+                <p style="color: #718096; margin-bottom: 20px;">
+                    Add your technical and soft skills to improve job matching accuracy.
+                </p>
+                <div class="skill-input-container">
+                    <input type="text" id="skill-input" placeholder="Enter a skill (e.g., Python, JavaScript, Communication, etc.)">
+                    <button class="add-skill-btn" onclick="addSkill()">➕ Add Skill</button>
+                </div>
+                
+                <!-- Skill suggestions -->
+                <div style="margin-bottom: 20px;">
+                    <small style="color: #718096;">Popular skills:</small><br>
+                    <button class="skill-suggestion" onclick="addSuggestedSkill('Python')">Python</button>
+                    <button class="skill-suggestion" onclick="addSuggestedSkill('JavaScript')">JavaScript</button>
+                    <button class="skill-suggestion" onclick="addSuggestedSkill('React')">React</button>
+                    <button class="skill-suggestion" onclick="addSuggestedSkill('Node.js')">Node.js</button>
+                    <button class="skill-suggestion" onclick="addSuggestedSkill('SQL')">SQL</button>
+                    <button class="skill-suggestion" onclick="addSuggestedSkill('Java')">Java</button>
+                </div>
+                
+                <div class="skills-display" id="skills-display">
+                    <p style="color: #718096;">No skills added yet. Add your skills to improve job matching.</p>
+                </div>
+            </div>
+            
+            <!-- Resume Management Section -->
+            <div class="profile-section">
+                <h2 class="section-title">📄 Resume Management</h2>
+                <div class="profile-grid">
+                    <div>
+                        <h3 style="margin-bottom: 15px;">📁 Upload Existing Resume</h3>
+                        <div class="resume-upload-area" onclick="triggerFileUpload()" 
+                             ondrop="handleFileDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                            <div class="upload-icon">📁</div>
+                            <p><strong>Click to upload</strong> or drag & drop your resume</p>
+                            <p style="font-size: 0.9rem; color: #718096;">PDF, DOC, DOCX files accepted (Max 5MB)</p>
+                        </div>
+                        <input type="file" id="resume-file" accept=".pdf,.doc,.docx" style="display: none;" onchange="handleFileUpload(event)">
+                        <div id="uploaded-resume" style="display: none; margin-top: 15px;">
+                            <p style="color: #48bb78; font-weight: 600;">✅ Resume uploaded successfully!</p>
+                            <div style="margin-top: 10px;">
+                                <button class="search-btn" onclick="viewResume()">👁️ View Resume</button>
+                                <button class="search-btn" onclick="deleteResume()" style="background: #e53e3e; margin-left: 10px;">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 style="margin-bottom: 15px;">🎨 Create New Resume</h3>
+                        <div class="resume-builder">
+                            <div class="form-row">
+                                <textarea id="resume-objective" placeholder="Career Objective - Describe your career goals and aspirations" rows="3"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="resume-company" placeholder="Current/Previous Company">
+                                <input type="text" id="resume-duration" placeholder="Duration (e.g., Jan 2020 - Present)">
+                            </div>
+                            <div class="form-row">
+                                <textarea id="resume-description" placeholder="Job Description & Key Achievements - Describe your responsibilities and accomplishments" rows="4"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <input type="text" id="resume-projects" placeholder="Key Projects (comma separated)">
+                                <input type="text" id="resume-certifications" placeholder="Certifications & Awards">
+                            </div>
+                            <div class="form-row">
+                                <textarea id="resume-additional" placeholder="Additional Information - Languages, Hobbies, etc." rows="2"></textarea>
+                            </div>
+                            <button class="generate-resume-btn" onclick="generateResume()">🚀 Generate Resume</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Job Preferences Section -->
+            <div class="profile-section">
+                <h2 class="section-title">🎯 Job Preferences</h2>
+                <div class="profile-grid">
+                    <div>
+                        <div class="input-group">
+                            <label for="preferred-role">Preferred Job Role</label>
+                            <input type="text" id="preferred-role" placeholder="e.g., Software Developer, Data Analyst">
+                        </div>
+                        <div class="input-group">
+                            <label for="preferred-industry">Preferred Industry</label>
+                            <select id="preferred-industry">
+                                <option value="">Select Industry</option>
+                                <option value="technology">Technology</option>
+                                <option value="finance">Finance</option>
+                                <option value="healthcare">Healthcare</option>
+                                <option value="education">Education</option>
+                                <option value="ecommerce">E-commerce</option>
+                                <option value="consulting">Consulting</option>
+                                <option value="startup">Startup</option>
+                                <option value="government">Government</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="input-group">
+                            <label for="work-mode">Work Mode Preference</label>
+                            <select id="work-mode">
+                                <option value="">Any Mode</option>
+                                <option value="remote">Remote</option>
+                                <option value="hybrid">Hybrid</option>
+                                <option value="onsite">On-site</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="job-type">Job Type</label>
+                            <select id="job-type">
+                                <option value="">Any Type</option>
+                                <option value="full-time">Full Time</option>
+                                <option value="part-time">Part Time</option>
+                                <option value="contract">Contract</option>
+                                <option value="internship">Internship</option>
+                            </select>
+                        </div>
+                        <button class="login-btn" onclick="saveJobPreferences()">💾 Save Preferences</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize job seeker specific functions
+        let uploadedResumeData = null;
+        
+        // Skill suggestion function
+        function addSuggestedSkill(skill) {
+            document.getElementById('skill-input').value = skill;
+            addSkill();
+        }
+        
+        // Save job preferences
+        function saveJobPreferences() {
+            const preferredRole = document.getElementById('preferred-role').value;
+            const preferredIndustry = document.getElementById('preferred-industry').value;
+            const workMode = document.getElementById('work-mode').value;
+            const jobType = document.getElementById('job-type').value;
+            
+            // Save preferences (in real app, this would be saved to database)
+            if (currentUser) {
+                currentUser.jobPreferences = {
+                    preferredRole, preferredIndustry, workMode, jobType
+                };
+                alert('Job preferences saved successfully!');
+            }
+        }
+        
+        // Delete uploaded resume
+        function deleteResume() {
+            if (confirm('Are you sure you want to delete the uploaded resume?')) {
+                document.getElementById('uploaded-resume').style.display = 'none';
+                document.getElementById('resume-file').value = '';
+                uploadedResumeData = null;
+                if (currentUser) {
+                    currentUser.resume = null;
+                }
+                alert('Resume deleted successfully!');
+            }
+        }
+        
+        // Enhanced file upload with validation
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size too large. Please upload a file smaller than 5MB.');
+                    return;
+                }
+                
+                // Validate file type
+                const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Invalid file type. Please upload PDF, DOC, or DOCX files only.');
+                    return;
+                }
+                
+                // Simulate file processing
+                setTimeout(() => {
+                    document.getElementById('uploaded-resume').style.display = 'block';
+                    uploadedResumeData = { name: file.name, type: file.type, size: file.size };
+                    if (currentUser) {
+                        currentUser.resume = uploadedResumeData;
+                    }
+                }, 1000);
+            }
+        }
+        
+        // Enhanced resume generation
+        function generateResume() {
+            const objective = document.getElementById('resume-objective').value;
+            const company = document.getElementById('resume-company').value;
+            const duration = document.getElementById('resume-duration').value;
+            const description = document.getElementById('resume-description').value;
+            const projects = document.getElementById('resume-projects').value;
+            const certifications = document.getElementById('resume-certifications').value;
+            const additional = document.getElementById('resume-additional').value;
+            
+            if (!objective || !description) {
+                alert('Please fill in at least the Career Objective and Job Description fields');
+                return;
+            }
+            
+            // Enhanced resume generation with progress
+            const generateBtn = document.querySelector('.generate-resume-btn');
+            const originalText = generateBtn.textContent;
+            generateBtn.textContent = '🔄 Generating Resume...';
+            generateBtn.disabled = true;
+            
+            setTimeout(() => {
+                alert('✅ Resume generated successfully! You can now download it.');
+                generateBtn.textContent = '📥 Download Resume';
+                generateBtn.onclick = function() {
+                    downloadResume();
+                };
+                generateBtn.disabled = false;
+                
+                // Save enhanced resume data
+                if (currentUser) {
+                    currentUser.generatedResume = {
+                        objective, company, duration, description, projects, certifications, additional,
+                        skills: userSkills,
+                        profile: currentUser.profile,
+                        jobPreferences: currentUser.jobPreferences,
+                        generatedDate: new Date().toLocaleDateString()
+                    };
+                }
+            }, 3000);
+        }
+        
+        // Enhanced resume content creation
+        function createResumeContent() {
+            const data = currentUser.generatedResume;
+            const profile = currentUser.profile || {};
+            const preferences = currentUser.jobPreferences || {};
+            
+            return `
+==============================================
+              PROFESSIONAL RESUME
+==============================================
+
+${profile.name || '[Your Name]'}
+Email: ${currentUser.email}
+Phone: ${profile.phone || '[Your Phone]'}
+Location: ${profile.location || '[Your Location]'}
+${preferences.preferredRole ? 'Seeking: ' + preferences.preferredRole : ''}
+
+==============================================
+CAREER OBJECTIVE
+==============================================
+${data.objective}
+
+==============================================
+PROFESSIONAL EXPERIENCE
+==============================================
+${data.company ? 'Company: ' + data.company : ''}
+${data.duration ? 'Duration: ' + data.duration : ''}
+${profile.currentRole ? 'Role: ' + profile.currentRole : ''}
+
+${data.description}
+
+==============================================
+TECHNICAL SKILLS
+==============================================
+${userSkills.join(' • ') || '[Your Skills]'}
+
+==============================================
+KEY PROJECTS
+==============================================
+${data.projects || '[Your Projects]'}
+
+==============================================
+CERTIFICATIONS & ACHIEVEMENTS
+==============================================
+${data.certifications || '[Your Certifications]'}
+
+==============================================
+EDUCATION
+==============================================
+${profile.education || '[Your Education]'}
+${profile.experience ? 'Experience Level: ' + profile.experience : ''}
+
+==============================================
+JOB PREFERENCES
+==============================================
+${preferences.preferredIndustry ? 'Preferred Industry: ' + preferences.preferredIndustry : ''}
+${preferences.workMode ? 'Work Mode: ' + preferences.workMode : ''}
+${preferences.jobType ? 'Job Type: ' + preferences.jobType : ''}
+${profile.salary ? 'Expected Salary: ' + profile.salary : ''}
+
+${data.additional ? '=============================================='
++ '\nADDITIONAL INFORMATION'
++ '\n=============================================='
++ '\n' + data.additional : ''}
+
+Generated on: ${data.generatedDate}
+Generated by: JobPortal Pro - Smart Job Portal
+            `;
+        }
+        
+        // Load saved data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize with demo data if needed
+            if (!currentUser) {
+                currentUser = { email: 'jobseeker@example.com', type: 'jobseeker' };
+            }
+            
+            // Load saved skills if any
+            displaySkills();
+        });
+    </script>
+</body>
+</html>

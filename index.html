@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobPortal Pro - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-wrapper">
+            <div class="logo-section">
+                <h1 class="logo">JobPortal Pro</h1>
+                <p class="tagline">Connect Talent with Opportunity</p>
+            </div>
+            
+            <div class="login-selector">
+                <div class="user-type-tabs">
+                    <button class="tab-btn active" id="jobseeker-tab" onclick="switchUserType('jobseeker')">
+                        <i class="icon">👤</i>
+                        <span>Job Seeker</span>
+                    </button>
+                    <button class="tab-btn" id="recruiter-tab" onclick="switchUserType('recruiter')">
+                        <i class="icon">🏢</i>
+                        <span>Recruiter/Company</span>
+                    </button>
+                </div>
+
+                <!-- Job Seeker Login Form -->
+                <div id="jobseeker-form" class="login-form active">
+                    <h2>Job Seeker Login</h2>
+                    <form onsubmit="loginJobSeeker(event)">
+                        <div class="input-group">
+                            <label for="js-email">Email Address</label>
+                            <input type="email" id="js-email" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="js-password">Password</label>
+                            <input type="password" id="js-password" name="password" required>
+                        </div>
+                        <button type="submit" class="login-btn">Login as Job Seeker</button>
+                    </form>
+                    <div class="form-footer">
+                        <a href="#" onclick="showRegisterForm('jobseeker')">Don't have an account? Register</a>
+                    </div>
+                </div>
+
+                <!-- Recruiter Login Form -->
+                <div id="recruiter-form" class="login-form">
+                    <h2>Recruiter/Company Login</h2>
+                    <form onsubmit="loginRecruiter(event)">
+                        <div class="input-group">
+                            <label for="rec-email">Company Email</label>
+                            <input type="email" id="rec-email" name="email" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="rec-password">Password</label>
+                            <input type="password" id="rec-password" name="password" required>
+                        </div>
+                        <button type="submit" class="login-btn recruiter-btn">Login as Recruiter</button>
+                    </form>
+                    <div class="form-footer">
+                        <a href="#" onclick="showRegisterForm('recruiter')">Don't have an account? Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="register-form-container">
+                <!-- Registration forms will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

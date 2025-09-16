@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Dashboard - JobPortal Pro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <div class="dashboard-logo">JobPortal Pro - Recruiter</div>
+            <div class="user-info">
+                <div class="user-avatar">R</div>
+                <span>Welcome, Recruiter</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <div class="search-container">
+                <h2 class="search-title">🔍 AI-Powered Candidate Search</h2>
+                <p style="color: #718096; margin-bottom: 20px;">
+                    Use natural language to describe your ideal candidate. Our AI will understand and find matching profiles.
+                </p>
+                <input type="text" id="candidate-search" class="search-box" 
+                       placeholder="e.g., 'I want a Python programmer with machine learning skills and 3+ years experience in fintech'">
+                <button class="search-btn" onclick="searchCandidates()">🚀 AI Search</button>
+                
+                <!-- Quick Search Templates -->
+                <div style="margin-top: 15px;">
+                    <small style="color: #718096;">Quick templates:</small><br>
+                    <button class="template-btn" onclick="useTemplate('Python developer with Django experience')">Python Developer</button>
+                    <button class="template-btn" onclick="useTemplate('React frontend developer with 2+ years experience')">React Developer</button>
+                    <button class="template-btn" onclick="useTemplate('DevOps engineer with AWS and Docker skills')">DevOps Engineer</button>
+                </div>
+            </div>~
+            
+            <div id="search-results" class="results-container" style="display: none;">
+                <h3>🎯 AI Search Results</h3>
+                <div id="candidates-list"></div>
+            </div>
+            
+            <div class="shortlist-table">
+                <div class="table-header">
+                    <h3>📋 Shortlisted Candidates</h3>
+                    <div>
+                        <button class="search-btn" onclick="exportShortlist()" style="margin-right: 10px;">📁 Export</button>
+                        <button class="clear-table-btn" onclick="clearShortlist()">Clear All</button>
+                    </div>
+                </div>
+                <div id="shortlist-container">
+                    <p style="color: #718096; text-align: center; padding: 20px;">
+                        No candidates shortlisted yet. Search and add candidates to create your talent pipeline.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Template selection function
+        function useTemplate(template) {
+            document.getElementById('candidate-search').value = template;
+        }
+        
+        // Export shortlist function
+        function exportShortlist() {
+            if (shortlistedCandidates.length === 0) {
+                alert('No candidates to export');
+                return;
+            }
+            
+            let csvContent = "Name,Email,Location,Experience,Skills,Match Score\n";
+            shortlistedCandidates.forEach(candidate => {
+                csvContent += `"${candidate.name}","${candidate.email}","${candidate.location}","${candidate.experience}","${candidate.skills.join('; ')}","${candidate.match}%"\n`;
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shortlisted_candidates.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
