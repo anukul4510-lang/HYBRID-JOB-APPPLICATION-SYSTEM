@@ -1,0 +1,42 @@
+{
+  "jobseekers": [
+    {
+      "email": "anukul4510@gmail.com",
+      "password": "$2b$12$Zao6ddQS.Bbs6mIOAZqyzO2mnVJ.oaV4Ww2tCOqFusGwt9pwQwuUG",
+      "name": "anukul",
+      "phone": "8891484510",
+      "company": null
+    },
+    {
+      "email": "abc@gmail.com",
+      "password": "$2b$12$DTOK2kp98/I.usNP8Da02.6qFNSVM9ru1VIVAw.BRhkxy85NpnYxO",
+      "name": "abc",
+      "phone": "08891484510",
+      "company": null
+    },
+    {
+      "email": "aljsdlkajskld@gmail.com",
+      "password": "$2b$12$a6x4GcOa2nlprEPRAe28teJLhEhPpMquarBG3bFY7kSquZH.fTTau",
+      "name": "alksjdklasd",
+      "phone": "1892739172893",
+      "company": null
+    },
+    {
+      "email": "abbc@gmail.com",
+      "password": "$2b$12$pfOl1PmIUsmF7bWfIbYOx.tzIoui0NBKCwjgurMc9G.462VfVj/TG",
+      "name": "UTDTRYJHFDETHDS",
+      "phone": "08891484510",
+      "company": null
+    }
+  ],
+  "recruiters": [
+    {
+      "email": "acv@gmail.com",
+      "password": "$2b$12$DcG7v9engdShYlzxmO8LKu2KXJ8R9y6L3pMYdc044y2LsEgzfdO92",
+      "name": "acv",
+      "phone": null,
+      "company": "acv"
+    }
+  ],
+  "jobs": []
+}

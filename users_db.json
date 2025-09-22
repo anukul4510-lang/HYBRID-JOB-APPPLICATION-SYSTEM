@@ -1,0 +1,20 @@
+{
+  "jobseekers": [
+    {
+      "email": "anukul4510@gmail.com",
+      "password": "$2b$12$u8HlcXs9nEWK5Oia7AdguuF/JHkTmQwiXt5NKvn3Rl6n8N7VDpYCy",
+      "name": "anukul k saji",
+      "phone": "08891484510",
+      "company": null
+    }
+  ],
+  "recruiters": [
+    {
+      "email": "acv@gmail.com",
+      "password": "$2b$12$VqpwnUXR/evsOJaUPD5MFOV3FBStJ5Kfqh/wgDRjPq3KGVQFAycs6",
+      "name": "avc",
+      "phone": null,
+      "company": "acv"
+    }
+  ]
+}

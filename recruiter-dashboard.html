@@ -7,12 +7,20 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            initRecruiterDashboard().catch(error => {
+                console.error('Failed to initialize dashboard:', error);
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
     <div class="dashboard">
         <div class="dashboard-header">
             <div class="dashboard-logo">JobPortal Pro - Recruiter</div>
             <div class="user-info">
                 <div class="user-avatar">R</div>
-                <span>Welcome, Recruiter</span>
+                <span id="welcome-message">Welcome</span>
                 <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -55,6 +63,17 @@
                     </p>
                 </div>
             </div>
+
+            <div class="create-job-section">
+                <h2>Post and Manage Job Vacancies</h2>
+                <p>Click the button below to create a new job posting and find the perfect candidate.</p>
+                <button class="search-btn" id="create-job-btn">Create New Job Posting</button>
+            </div>
+
+            <div class="applications-section">
+                <h2 class="section-title">📄 Received Applications</h2>
+                <div id="applications-list"></div>
+            </div>
         </div>
     </div>
 
@@ -86,4 +105,85 @@
             URL.revokeObjectURL(url);
         }
     </script>
+
+    <div id="post-job-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-btn" id="close-modal-btn">&times;</span>
+            <h2 class="post-job-title">Create New Job Posting</h2>
+            <div class="multi-step-form">
+                <div class="step-indicators">
+                    <span class="step-indicator active" data-step="1">Job Details</span>
+                    <span class="step-indicator" data-step="2">Skills & Salary</span>
+                    <span class="step-indicator" data-step="3">Review & Publish</span>
+                </div>
+                <form id="multi-step-job-form">
+                    <div class="form-step active" data-step="1">
+                        <div class="form-group">
+                            <label for="multi-job-title">Job Title</label>
+                            <input type="text" id="multi-job-title" name="job-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="multi-location">Location</label>
+                            <input type="text" id="multi-location" name="location" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="multi-employment-type">Employment Type</label>
+                            <select id="multi-employment-type" name="employment-type" required>
+                                <option value="">Select Employment Type</option>
+                                <option value="full-time">Full-time</option>
+                                <option value="part-time">Part-time</option>
+                                <option value="contract">Contract</option>
+                                <option value="temporary">Temporary</option>
+                                <option value="internship">Internship</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="multi-job-description">Job Description</label>
+                            <div id="editor-container" style="height: 200px;"></div>
+                        </div>
+                        <div class="form-group text-right">
+                            <button type="button" class="next-btn search-btn">Next</button>
+                        </div>
+                    </div>
+                    <div class="form-step" data-step="2">
+                        <div class="form-group">
+                            <label for="multi-required-skills">Required Skills</label>
+                            <div class="skills-input-container">
+                                <input type="text" id="multi-required-skills" placeholder="Add a skill and press Enter">
+                            </div>
+                            <div class="skills-tags"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Salary Range</label>
+                            <div class="salary-slider-container">
+                                <div class="salary-values">
+                                    <span id="min-salary-value">$50,000</span> - <span id="max-salary-value">$100,000</span>
+                                </div>
+                                <input type="range" id="min-salary" min="0" max="200000" value="50000" class="slider">
+                                <input type="range" id="max-salary" min="0" max="200000" value="100000" class="slider">
+                            </div>
+                        </div>
+                        <div class="form-group space-between">
+                            <button type="button" class="prev-btn search-btn">Previous</button>
+                            <button type="button" class="next-btn search-btn">Next</button>
+                        </div>
+                    </div>
+                    <div class="form-step" data-step="3">
+                        <div class="review-summary">
+                            <h3>Review Job Posting</h3>
+                            <div id="summary-content"></div>
+                        </div>
+                        <div class="form-group space-between">
+                            <button type="button" class="prev-btn search-btn">Previous</button>
+                            <button type="submit" class="publish-btn search-btn">Publish Vacancy</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
 </body>

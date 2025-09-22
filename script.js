@@ -1,75 +1,610 @@
 // script.js - Main JavaScript File
 
-// Global variables
-let currentUser = null;
-let userType = null;
-let shortlistedCandidates = [];
-let userSkills = [];
-const backendurl = "http://localhost:3000";
+// Global variables for managing user state
+if (typeof currentUser === 'undefined') {
+    let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
+    let userType = currentUser ? currentUser.type : null;
+    
+    // Initialize userSkills array
+    let userSkills = [];
+}
+
+// Function to verify token and protect routes
+async function verifyToken() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user || !user.token) {
+        window.location.replace('index.html');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:8000/verify-token', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${user.token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Token verification failed');
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error('Token invalid');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        localStorage.removeItem('currentUser');
+        window.location.replace('index.html');
+    }
+}
+
+// Protect dashboard routes
+if (window.location.pathname.includes('dashboard')) {
+    verifyToken().catch(() => {
+        window.location.replace('index.html');
+    });
+}
+
+// Wait for the DOM to be fully loaded before attaching event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Only set up login-related functionality if we're on the login/landing page
+    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
+        // Set up tab switching
+        setupTabSwitching();
+        
+        // Set up registration links
+        setupRegistrationLinks();
+        
+        // Set up modal close functionality
+        setupModalClose();
+
+        // Set up login form handlers
+        setupLoginForms();
+        
+        // Set up registration form handler
+        document.addEventListener('submit', function(event) {
+            if (event.target.id === 'registration-form') {
+                event.preventDefault();
+                const type = document.getElementById('register-modal').dataset.userType;
+                registerUser(event, type);
+            }
+        });
+        
+        // Set initial active tab based on URL parameter or default to jobseeker
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialTab = urlParams.get('type') || 'jobseeker';
+        switchTabs(initialTab);
+    }
+});
+
+// Setup tab switching functionality
+function setupTabSwitching() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const type = this.id.replace('-tab', '');
+            switchTabs(type);
+        });
+    });
+}
+
+function switchTabs(type) {
+    console.log(`Switching tabs to: ${type}`);
+    
+    // Remove active class from all tabs and forms
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+        tab.classList.remove('active');
+        console.log(`Removed active class from tab: ${tab.id}`);
+    });
+    
+    document.querySelectorAll('.login-form').forEach(form => {
+        form.classList.remove('active');
+        console.log(`Removed active class from form: ${form.id}`);
+    });
+
+    // Add active class to selected tab and form
+    const selectedTab = document.getElementById(`${type}-tab`);
+    const selectedForm = document.getElementById(`${type}-form`);
+
+    console.log('Selected elements:', { 
+        tab: selectedTab ? selectedTab.id : 'not found', 
+        form: selectedForm ? selectedForm.id : 'not found'
+    });
+
+    if (selectedTab && selectedForm) {
+        selectedTab.classList.add('active');
+        selectedForm.classList.add('active');
+        console.log('Added active classes to selected elements');
+        
+        // Update URL without page reload
+        const url = new URL(window.location.href);
+        url.searchParams.set('type', type);
+        window.history.replaceState({}, '', url);
+        console.log('Updated URL:', url.href);
+    } else {
+        console.error('Could not find tab or form elements for type:', type);
+    }
+}
+
+function setupRegistrationLinks() {
+    const registerLinks = document.querySelectorAll('.register-link');
+    registerLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const userType = this.getAttribute('data-type');
+            showRegisterForm(userType);
+        });
+    });
+}
+
+function setupModalClose() {
+    const modal = document.getElementById('register-modal');
+    const closeBtn = document.querySelector('.close-btn');
+    
+    // Close on X button click
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    
+    // Close on clicking outside modal
+    window.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+}
+
+// Remove any previous error messages
+function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(error => {
+        if (error.style) {
+            error.style.display = 'none';
+            error.textContent = '';
+        }
+    });
+}
+
+function showLoginError(formId, message) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    const errorContainer = form.querySelector('.error-message');
+    if (errorContainer) {
+        errorContainer.textContent = message;
+        errorContainer.style.display = 'block';
+    }
+}
+
+function showError(formId, message) {
+    clearErrors(); // Clear any existing errors
+    
+    // For registration form
+    if (formId === 'registration-form') {
+        const errorDiv = document.getElementById('registration-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            return;
+        }
+    }
+    
+    // For login forms
+    const form = document.getElementById(formId);
+    if (!form) {
+        console.error('Form not found:', formId);
+        return;
+    }
+    
+    const errorDiv = form.querySelector('.error-message');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    } else {
+        console.error('Error message container not found in form:', formId);
+    }
+}
+
+// Set up login form handlers
+function setupLoginForms() {
+    const jobseekerForm = document.getElementById('jobseeker-login-form');
+    const recruiterForm = document.getElementById('recruiter-login-form');
+
+    if (jobseekerForm) {
+        jobseekerForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            await loginUser(event, 'jobseeker');
+        });
+    }
+
+    if (recruiterForm) {
+        recruiterForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            await loginUser(event, 'recruiter');
+        });
+    }
+}
+
+// Unified login function for both user types
+async function loginUser(event, userType) {
+    event.preventDefault();
+    clearErrors();
+
+    const formId = `${userType}-form`;
+    const emailId = userType === 'jobseeker' ? 'js-email' : 'rec-email';
+    const passwordId = userType === 'jobseeker' ? 'js-password' : 'rec-password';
+    
+    const email = document.getElementById(emailId).value;
+    const password = document.getElementById(passwordId).value;
+    
+    // Simple validation
+    if (!email || !password) {
+        showError(formId, 'Please enter both email and password');
+        return;
+    }
+    
+    try {
+        const loginData = {
+            userEmail: email,
+            password: password,
+            userType: userType
+        };
+        console.log('Sending login request with data:', loginData);
+        
+        const response = await fetch('http://localhost:8000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(loginData)
+        });
+
+        console.log('Login response status:', response.status);
+        const data = await response.json();
+        console.log('Login response data:', data);
+        if (response.ok && (data.token || data.access_token)) {
+            // Store user data
+            const userData = {
+                email: email,
+                type: userType,
+                token: data.token || data.access_token
+            };
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+            
+            // Redirect to appropriate dashboard
+            const dashboardUrl = `${userType}-dashboard.html`;
+            console.log('Redirecting to dashboard:', dashboardUrl);
+            window.location.replace(dashboardUrl); // Using replace to prevent back navigation to login
+        } else {
+            showLoginError(formId, data.detail || 'Login failed. Please check your credentials.');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showLoginError(formId, 'Network error. Please try again.');
+    }
+}
+
+// Registration Modal functions
+function showRegisterForm(type) {
+    const modal = document.getElementById('register-modal');
+    const container = document.getElementById('register-form-container');
+    
+    // Clear any existing errors
+    clearErrors();
+    
+    // Store the user type for registration
+    modal.dataset.userType = type;
+    
+    const formHtml = `
+        <h2>${type === 'jobseeker' ? 'Job Seeker' : 'Recruiter'} Registration</h2>
+        <form id="registration-form" class="registration-form">
+            <div id="registration-error" class="error-message" style="display: none; color: red; margin-bottom: 10px;"></div>
+            <div class="input-group">
+                <label for="reg-name">Full Name*</label>
+                <input type="text" id="reg-name" name="name" required>
+            </div>
+            <div class="input-group">
+                <label for="reg-email">Email Address*</label>
+                <input type="email" id="reg-email" name="email" required>
+            </div>
+            <div class="input-group">
+                <label for="reg-password">Password*</label>
+                <input type="password" id="reg-password" name="password" required 
+                       minlength="6" title="Password must be at least 6 characters long">
+            </div>
+            ${type === 'jobseeker' ? `
+                <div class="input-group">
+                    <label for="reg-phone">Phone Number*</label>
+                    <input type="tel" id="reg-phone" name="phone" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-location">Location</label>
+                    <input type="text" id="reg-location" name="location">
+                </div>
+            ` : `
+                <div class="input-group">
+                    <label for="reg-company">Company Name*</label>
+                    <input type="text" id="reg-company" name="company" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-industry">Industry*</label>
+                    <select id="reg-industry" name="industry" required>
+                        <option value="">Select Industry</option>
+                        <option value="technology">Technology</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="education">Education</option>
+                        <option value="manufacturing">Manufacturing</option>
+                        <option value="retail">Retail</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            `}
+            <p class="form-note">* Required fields</p>
+            <button type="submit" class="login-btn ${type === 'recruiter' ? 'recruiter-btn' : ''}">
+                Register as ${type === 'jobseeker' ? 'Job Seeker' : 'Recruiter'}
+            </button>
+        </form>
+    `;
+    
+    container.innerHTML = formHtml;
+    modal.style.display = 'block';
+}
+
+function closeModal() {
+    console.log('Closing registration modal');
+    clearErrors();
+    const modal = document.getElementById('register-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        console.log('Modal hidden');
+    } else {
+        console.error('Modal element not found');
+    }
+}
+
+async function registerUser(event, type) {
+    event.preventDefault();
+    clearErrors();
+    
+    const formData = {
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-password').value,
+        name: document.getElementById('reg-name').value,
+        userType: type
+    };
+
+    // Validate required fields
+    if (!formData.email || !formData.password || !formData.name) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.color = 'red';
+        errorDiv.style.marginTop = '10px';
+        errorDiv.textContent = 'Please fill in all required fields';
+        document.querySelector('#register-form-container form').appendChild(errorDiv);
+        return;
+    }
+
+    // Add specific fields based on user type
+    if (type === 'jobseeker') {
+        const phone = document.getElementById('reg-phone').value;
+        if (!phone) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.style.color = 'red';
+            errorDiv.style.marginTop = '10px';
+            errorDiv.textContent = 'Phone number is required';
+            document.querySelector('#register-form-container form').appendChild(errorDiv);
+            return;
+        }
+        formData.phone = phone;
+    } else {
+        const company = document.getElementById('reg-company').value;
+        if (!company) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.style.color = 'red';
+            errorDiv.style.marginTop = '10px';
+            errorDiv.textContent = 'Company name is required';
+            document.querySelector('#register-form-container form').appendChild(errorDiv);
+            return;
+        }
+        formData.company = company;
+    }
+
+    try {
+        console.log('Starting registration process...');
+        // console.log('Registration data:', formData);
+        
+        // Send registration request directly
+        console.log('Sending registration request to server...');
+        let response;
+        try {
+            response = await fetch('http://localhost:8000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            console.log('Raw response received:', response);
+        } catch (fetchError) {
+            console.error('Fetch error:', fetchError);
+            throw new Error('Network error while trying to register');
+        }
+
+        console.log('Registration response status:', response.status);
+        let data;
+        try {
+            const textData = await response.text();
+            console.log('Raw response text:', textData);
+            try {
+                data = JSON.parse(textData);
+                console.log('Parsed registration response data:', data);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.log('Failed to parse response text:', textData);
+                throw new Error('Invalid response format from server');
+            }
+        } catch (textError) {
+            console.error('Error reading response text:', textError);
+            throw new Error('Error reading server response');
+        }
+
+        if (!response.ok) {
+            console.log('Registration failed with status:', response.status);
+            if (data.detail === "User already exists") {
+                showError('registration-form', 'This email is already registered. Please use a different email or try logging in.');
+            } else {
+                showError('registration-form', data.detail || 'Registration failed. Please try again.');
+            }
+            return;
+        }
+
+        try {
+            // Registration successful
+            console.log('Registration successful:', data);
+            
+            // Close modal first
+            console.log('Closing modal...');
+            const modal = document.getElementById('register-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // Then show alert
+            console.log('Showing success alert...');
+            alert('Registration successful! Please login with your credentials.');
+            
+            // Finally switch tab and pre-fill email
+            console.log('Switching to login tab and pre-filling email...');
+            const emailInput = document.getElementById(type === 'jobseeker' ? 'js-email' : 'rec-email');
+            if (emailInput) {
+                emailInput.value = formData.email;
+                console.log('Email pre-filled:', formData.email);
+            }
+            
+            switchTabs(type);
+        } catch (error) {
+            console.error('Error in post-registration steps:', error);
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        console.error('Error stack:', error.stack);
+        showError('registration-form', 'Network error. Please try again.');
+    }
+    
+    return false; // Prevent form submission
+}
+
+// Dashboard initialization and authentication
+
+// Authentication check with backend verification
+async function checkAuth() {
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user || !user.token) {
+            window.location.href = 'index.html';
+            return false;
+        }
+
+        // Verify token with backend
+        const response = await fetch('http://localhost:8000/verify-token', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${user.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Invalid token');
+        }
+
+        const data = await response.json();
+        return data.user_type === user.type;
+    } catch (error) {
+        console.error('Authentication error:', error);
+        localStorage.removeItem('currentUser');
+        window.location.href = 'index.html';
+        return false;
+    }
+}
+
+// Logout function
+function logout() {
+    localStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
+}
 
 // Sample candidate data for demonstration
-const candidatesDatabase = [
-    {
-        id: 1,
-        name: "Rahul Kumar",
-        email: "rahul@email.com",
-        skills: ["Python", "Django", "Machine Learning", "SQL", "AWS"],
-        experience: "3 years",
-        location: "Bangalore",
-        education: "B.Tech Computer Science",
-        match: 95
-    },
-    {
-        id: 2,
-        name: "Priya Sharma",
-        email: "priya@email.com",
-        skills: ["React", "Node.js", "JavaScript", "MongoDB", "Express"],
-        experience: "2 years",
-        location: "Mumbai",
-        education: "MCA",
-        match: 88
-    },
-    {
-        id: 3,
-        name: "Amit Patel",
-        email: "amit@email.com",
-        skills: ["Java", "Spring Boot", "Microservices", "Docker", "Kubernetes"],
-        experience: "4 years",
-        location: "Pune",
-        education: "B.Tech IT",
-        match: 92
-    },
-    {
-        id: 4,
-        name: "Sneha Reddy",
-        email: "sneha@email.com",
-        skills: ["Python", "Flask", "Data Science", "Pandas", "NumPy"],
-        experience: "1.5 years",
-        location: "Hyderabad",
-        education: "M.Tech Data Science",
-        match: 85
-    },
-    {
-        id: 5,
-        name: "Vikash Singh",
-        email: "vikash@email.com",
-        skills: ["PHP", "Laravel", "MySQL", "HTML", "CSS", "JavaScript"],
-        experience: "3 years",
-        location: "Delhi",
-        education: "BCA",
-        match: 78
-    },
-    {
-        id: 6,
-        name: "Anita Gupta",
-        email: "anita@email.com",
-        skills: ["React Native", "Flutter", "Mobile Development", "Firebase"],
-        experience: "2.5 years",
-        location: "Chennai",
-        education: "B.Tech CSE",
-        match: 90
-    }
-];
+if (typeof candidatesDatabase === 'undefined') {
+    const candidatesDatabase = [
+        {
+            id: 1,
+            name: "Rahul Kumar",
+            email: "rahul@email.com",
+            skills: ["Python", "Django", "Machine Learning", "SQL", "AWS"],
+            experience: "3 years",
+            location: "Bangalore",
+            education: "B.Tech Computer Science",
+            match: 95
+        },
+        {
+            id: 2,
+            name: "Priya Sharma",
+            email: "priya@email.com",
+            skills: ["React", "Node.js", "JavaScript", "MongoDB", "Express"],
+            experience: "2 years",
+            location: "Mumbai",
+            education: "MCA",
+            match: 88
+        },
+        {
+            id: 3,
+            name: "Amit Patel",
+            email: "amit@email.com",
+            skills: ["Java", "Spring Boot", "Microservices", "Docker", "Kubernetes"],
+            experience: "4 years",
+            location: "Pune",
+            education: "B.Tech IT",
+            match: 92
+        },
+        {
+            id: 4,
+            name: "Sneha Reddy",
+            email: "sneha@email.com",
+            skills: ["Python", "Flask", "Data Science", "Pandas", "NumPy"],
+            experience: "1.5 years",
+            location: "Hyderabad",
+            education: "M.Tech Data Science",
+            match: 85
+        },
+        {
+            id: 5,
+            name: "Vikash Singh",
+            email: "vikash@email.com",
+            skills: ["PHP", "Laravel", "MySQL", "HTML", "CSS", "JavaScript"],
+            experience: "3 years",
+            location: "Delhi",
+            education: "BCA",
+            match: 78
+        },
+        {
+            id: 6,
+            name: "Anita Gupta",
+            email: "anita@email.com",
+            skills: ["React Native", "Flutter", "Mobile Development", "Firebase"],
+            experience: "2.5 years",
+            location: "Chennai",
+            education: "B.Tech CSE",
+            match: 90
+        }
+    ];
+}
 
 // Login page functions
 function switchUserType(type) {
@@ -82,309 +617,242 @@ function switchUserType(type) {
     document.getElementById(type + '-form').classList.add('active');
 }
 
-function loginJobSeeker(event) {
+async function loginJobSeeker(event) {
     event.preventDefault();
     const email = document.getElementById('js-email').value;
     const password = document.getElementById('js-password').value;
-    fetch(backendurl+"/login", {
-        method: "POST",
-        body: JSON.stringify({
-            userEmail: email,
-            password: password
-        }),
-        headers: {
-            "Content-type": "application/json; charset=UTF-8"
+    
+    // Remove any previous error
+    clearErrors();
+    
+    // Simple validation
+    if (!email || !password) {
+        showError('jobseeker-form', 'Please enter both email and password');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:8000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userEmail: email,
+                password: password,
+                userType: 'jobseeker'
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showError('jobseeker-form', data.detail || 'Login failed. Please check your credentials.');
+            return;
         }
-    })
-  .then((response) => location.href = '/jobseeker-dashboard.html') //Gets response from the backend whether login succeeded or failed
-  .then((json) => console.log(json));
 
-
-
-    // Simple validation (in real app, this would be server-side)
-    if (email && password) {
-        currentUser = { email: email, type: 'jobseeker' };
-        userType = 'jobseeker';
-        showJobSeekerDashboard();
-    } else {
-        alert('Please enter valid credentials');
+        if (data.success) {
+            localStorage.setItem('currentUser', JSON.stringify({
+                email: data.user.email,
+                type: data.user.type,
+                token: data.token
+            }));
+            window.location.href = 'jobseeker-dashboard.html';
+        } else {
+            showError('jobseeker-form', data.detail || 'Login failed. Please check your credentials.');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showError('jobseeker-form', 'Network error. Please try again.');
     }
 }
-    
-function loginRecruiter(event) {
+
+async function loginRecruiter(event) {
     event.preventDefault();
     const email = document.getElementById('rec-email').value;
     const password = document.getElementById('rec-password').value;
-    console.log("hi");
     
-    fetch(backendurl+"/login", {
-        method: "POST",
-        body: JSON.stringify({
-            userEmail: email,
-            password: password
-        }),
-        headers: {
-            "Content-type": "application/json; charset=UTF-8"
-        }
-    })
-  .then((response) => location.href = '/recruiter-dashboard.html') //Gets response from the backend whether login succeeded or failed
-  .then((json) => console.log(json));
+    // Remove any previous error
+    clearErrors();
     
-}
-
-function showRegisterForm(type) {
-    const modal = document.getElementById('register-modal');
-    const container = document.getElementById('register-form-container');
-    
-    let registerHTML = '';
-    
-    if (type === 'jobseeker') {
-        registerHTML = `
-            <h2>Register as Job Seeker</h2>
-            <form onsubmit="registerJobSeeker(event)">
-                <div class="input-group">
-                    <label for="reg-name">Full Name</label>
-                    <input type="text" id="reg-name" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-email">Email Address</label>
-                    <input type="email" id="reg-email" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-password">Password</label>
-                    <input type="password" id="reg-password" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-phone">Phone Number</label>
-                    <input type="tel" id="reg-phone" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-location">Location</label>
-                    <input type="text" id="reg-location" required>
-                </div>
-                <button type="submit" class="login-btn">Register</button>
-            </form>
-        `;
-    } else {
-        registerHTML = `
-            <h2>Register as Recruiter/Company</h2>
-            <form onsubmit="registerRecruiter(event)">
-                <div class="input-group">
-                    <label for="reg-company">Company Name</label>
-                    <input type="text" id="reg-company" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-email">Company Email</label>
-                    <input type="email" id="reg-email" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-password">Password</label>
-                    <input type="password" id="reg-password" required>
-                </div>
-                <div class="input-group">
-                    <label for="reg-website">Company Website</label>
-                    <input type="url" id="reg-website">
-                </div>
-                <div class="input-group">
-                    <label for="reg-industry">Industry</label>
-                    <select id="reg-industry" required>
-                        <option value="">Select Industry</option>
-                        <option value="technology">Technology</option>
-                        <option value="finance">Finance</option>
-                        <option value="healthcare">Healthcare</option>
-                        <option value="education">Education</option>
-                        <option value="manufacturing">Manufacturing</option>
-                        <option value="retail">Retail</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <button type="submit" class="login-btn recruiter-btn">Register</button>
-            </form>
-        `;
+    // Simple validation
+    if (!email || !password) {
+        showError('recruiter-form', 'Please enter both email and password');
+        return;
     }
-    
-    container.innerHTML = registerHTML;
-    modal.style.display = 'block';
+
+    try {
+        const response = await fetch('http://localhost:8000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                userEmail: email,
+                password: password,
+                userType: 'recruiter'
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showError('recruiter-form', data.detail || 'Login failed. Please check your credentials.');
+            return;
+        }
+
+        if (data.success) {
+            localStorage.setItem('currentUser', JSON.stringify({
+                email: data.user.email,
+                type: data.user.type,
+                token: data.token
+            }));
+            window.location.href = 'recruiter-dashboard.html';
+        } else {
+            showError('recruiter-form', data.detail || 'Login failed. Please check your credentials.');
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showError('recruiter-form', 'Network error. Please try again.');
+    }
 }
 
-function registerJobSeeker(event) {
-    event.preventDefault();
-    alert('Registration successful! Please login with your credentials.');
-    closeModal();
-}
-
-function registerRecruiter(event) {
-    event.preventDefault();
-    alert('Registration successful! Please login with your credentials.');
-    closeModal();
-}
+// Register functions have been moved and combined into registerUser
 
 function closeModal() {
     document.getElementById('register-modal').style.display = 'none';
 }
 
+// Dashboard initialization functions
+async function initJobseekerDashboard() {
+    if (!(await checkAuth())) return;
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (user.type !== 'jobseeker') {
+            alert('Please login as a job seeker');
+            // window.location.href = 'index.html';
+            return;
+        }
+        
+        const welcomeMsg = document.getElementById('welcome-message');
+        if (welcomeMsg) {
+            welcomeMsg.textContent = `Welcome, ${user.email}`;
+        }
+        
+        // Initialize dashboard data
+        await loadJobSeekerDashboard();
+    } catch (error) {
+        console.error('Dashboard initialization error:', error);
+        // window.location.href = 'index.html';
+    }
+}
+
+async function initRecruiterDashboard() {
+    if (!(await checkAuth())) return;
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (user.type !== 'recruiter') {
+            alert('Please login as a recruiter');
+            // window.location.href = 'index.html';
+            return;
+        }
+        
+        const welcomeMsg = document.getElementById('welcome-message');
+        if (welcomeMsg) {
+            welcomeMsg.textContent = `Welcome, ${user.email}`;
+        }
+        
+        // Initialize dashboard data
+        await loadRecruiterDashboard();
+    } catch (error) {
+        console.error('Dashboard initialization error:', error);
+        // window.location.href = 'index.html';
+    }
+}
+
+// Helper functions for loading dashboard data
+async function loadJobSeekerDashboard() {
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user || !user.token) {
+            console.error('No user data or token found');
+            window.location.replace('index.html');
+            return;
+        }
+
+        console.log('Fetching dashboard data...');
+        const response = await fetch('http://localhost:8000/jobseeker/dashboard', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${user.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('Dashboard response status:', response.status);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Dashboard error:', errorData);
+            
+            if (response.status === 401 || response.status === 403) {
+                // Authentication or authorization error
+                localStorage.removeItem('currentUser');
+                window.location.replace('index.html');
+                return;
+            }
+            
+            throw new Error(errorData.detail || 'Failed to load dashboard');
+        }
+
+        const data = await response.json();
+        console.log('Dashboard data received:', data);
+        
+        if (data.success && data.user) {
+            // Initialize skills array if it exists in user data
+            window.userSkills = data.user.skills || [];
+            
+            // Update the UI with user data
+            document.getElementById('user-name').value = data.user.name || '';
+            document.getElementById('user-email').value = data.user.email || '';
+            document.getElementById('user-phone').value = data.user.phone || '';
+            
+            // Display skills if they exist
+            if (typeof displaySkills === 'function') {
+                displaySkills();
+            }
+        }
+    } catch (error) {
+        console.error('Error in loadJobSeekerDashboard:', error);
+        alert('Failed to load dashboard data. Please try again.');
+    }
+}
+
+async function loadRecruiterDashboard() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    try {
+        const response = await fetch('http://localhost:8000/recruiter/dashboard', {
+            headers: {
+                'Authorization': `Bearer ${user.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            // Update dashboard with received data
+            updateRecruiterDashboard(data);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+    }
+}
+
 // Dashboard functions
-function showRecruiterDashboard() {
-    document.body.innerHTML = `
-        <div class="dashboard">
-            <div class="dashboard-header">
-                <div class="dashboard-logo">JobPortal Pro - Recruiter</div>
-                <div class="user-info">
-                    <div class="user-avatar">R</div>
-                    <span>Welcome, ${currentUser.email}</span>
-                    <button class="logout-btn" onclick="logout()">Logout</button>
-                </div>
-            </div>
-            
-            <div class="dashboard-content">
-                <div class="search-container">
-                    <h2 class="search-title">🔍 AI-Powered Candidate Search</h2>
-                    <input type="text" id="candidate-search" class="search-box" 
-                           placeholder="e.g., 'I want a Python programmer with machine learning skills and 3+ years experience'">
-                    <button class="search-btn" onclick="searchCandidates()">Search Candidates</button>
-                </div>
-                
-                <div id="search-results" class="results-container" style="display: none;">
-                    <h3>Search Results</h3>
-                    <div id="candidates-list"></div>
-                </div>
-                
-                <div class="shortlist-table">
-                    <div class="table-header">
-                        <h3>📋 Shortlisted Candidates</h3>
-                        <button class="clear-table-btn" onclick="clearShortlist()">Clear All</button>
-                    </div>
-                    <div id="shortlist-container">
-                        <p style="color: #718096; text-align: center; padding: 20px;">No candidates shortlisted yet</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+function redirectToDashboard(userType) {
+    window.location.href = userType === 'recruiter' ? 'recruiter-dashboard.html' : 'jobseeker-dashboard.html';
 }
 
-function showJobSeekerDashboard() {
-    document.body.innerHTML = `
-        <div class="dashboard">
-            <div class="dashboard-header">
-                <div class="dashboard-logo">JobPortal Pro - Job Seeker</div>
-                <div class="user-info">
-                    <div class="user-avatar">J</div>
-                    <span>Welcome, ${currentUser.email}</span>
-                    <button class="logout-btn" onclick="logout()">Logout</button>
-                </div>
-            </div>
-            
-            <div class="dashboard-content">
-                <div class="profile-section">
-                    <h2 class="section-title">👤 Profile Management</h2>
-                    <div class="profile-grid">
-                        <div>
-                            <div class="input-group">
-                                <label for="user-name">Full Name</label>
-                                <input type="text" id="user-name" placeholder="Enter your full name">
-                            </div>
-                            <div class="input-group">
-                                <label for="user-email">Email</label>
-                                <input type="email" id="user-email" value="${currentUser.email}" readonly>
-                            </div>
-                            <div class="input-group">
-                                <label for="user-phone">Phone Number</label>
-                                <input type="tel" id="user-phone" placeholder="Enter phone number">
-                            </div>
-                            <div class="input-group">
-                                <label for="user-location">Location</label>
-                                <input type="text" id="user-location" placeholder="Enter your location">
-                            </div>
-                        </div>
-                        <div>
-                            <div class="input-group">
-                                <label for="user-experience">Experience (Years)</label>
-                                <select id="user-experience">
-                                    <option value="">Select Experience</option>
-                                    <option value="0-1">0-1 years</option>
-                                    <option value="1-3">1-3 years</option>
-                                    <option value="3-5">3-5 years</option>
-                                    <option value="5-10">5-10 years</option>
-                                    <option value="10+">10+ years</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <label for="user-education">Education</label>
-                                <input type="text" id="user-education" placeholder="e.g., B.Tech Computer Science">
-                            </div>
-                            <div class="input-group">
-                                <label for="user-current-role">Current Role</label>
-                                <input type="text" id="user-current-role" placeholder="e.g., Software Developer">
-                            </div>
-                            <button class="login-btn" onclick="saveProfile()">Save Profile</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="profile-section">
-                    <h2 class="section-title">🛠️ Skills Management</h2>
-                    <div class="skill-input-container">
-                        <input type="text" id="skill-input" placeholder="Enter a skill (e.g., Python, JavaScript, etc.)">
-                        <button class="add-skill-btn" onclick="addSkill()">Add Skill</button>
-                    </div>
-                    <div class="skills-display" id="skills-display">
-                        <!-- Skills will be displayed here -->
-                    </div>
-                </div>
-                
-                <div class="profile-section">
-                    <h2 class="section-title">📄 Resume Management</h2>
-                    <div class="profile-grid">
-                        <div>
-                            <h3 style="margin-bottom: 15px;">Upload Resume</h3>
-                            <div class="resume-upload-area" onclick="triggerFileUpload()" 
-                                 ondrop="handleFileDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                                <div class="upload-icon">📁</div>
-                                <p>Click to upload or drag & drop your resume</p>
-                                <p style="font-size: 0.9rem; color: #718096;">PDF, DOC, DOCX files accepted</p>
-                            </div>
-                            <input type="file" id="resume-file" accept=".pdf,.doc,.docx" style="display: none;" onchange="handleFileUpload(event)">
-                            <div id="uploaded-resume" style="display: none; margin-top: 15px;">
-                                <p style="color: #48bb78;">✓ Resume uploaded successfully!</p>
-                                <button class="search-btn" onclick="viewResume()">View Resume</button>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 style="margin-bottom: 15px;">Create Resume</h3>
-                            <div class="resume-builder">
-                                <div class="form-row">
-                                    <input type="text" id="resume-objective" placeholder="Career Objective">
-                                </div>
-                                <div class="form-row">
-                                    <input type="text" id="resume-company" placeholder="Current/Previous Company">
-                                    <input type="text" id="resume-duration" placeholder="Duration (e.g., 2020-2023)">
-                                </div>
-                                <div class="form-row">
-                                    <textarea id="resume-description" placeholder="Job Description & Achievements" rows="4"></textarea>
-                                </div>
-                                <div class="form-row">
-                                    <input type="text" id="resume-projects" placeholder="Key Projects">
-                                    <input type="text" id="resume-certifications" placeholder="Certifications">
-                                </div>
-                                <button class="generate-resume-btn" onclick="generateResume()">Generate Resume</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    displaySkills();
-}
 
-function logout() {
-    currentUser = null;
-    userType = null;
-    shortlistedCandidates = [];
-    userSkills = [];
-    location.reload();
-}
 
 // Recruiter Dashboard Functions
 function searchCandidates() {
@@ -570,6 +1038,12 @@ function addSkill() {
 
 function displaySkills() {
     const container = document.getElementById('skills-display');
+    if (!container) return; // Guard clause if not on skills page
+    
+    // Initialize userSkills if not exists
+    if (typeof userSkills === 'undefined') {
+        window.userSkills = [];
+    }
     
     if (userSkills.length === 0) {
         container.innerHTML = '<p style="color: #718096;">No skills added yet. Add your skills to improve job matching.</p>';
@@ -747,21 +1221,3 @@ ${profile.education || 'Your Education'}
 Generated by JobPortal Pro
     `;
 }
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Add skill on Enter key press
-    document.addEventListener('keypress', function(event) {
-        if (event.target.id === 'skill-input' && event.key === 'Enter') {
-            addSkill();
-        }
-    });
-    
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-        const modal = document.getElementById('register-modal');
-        if (event.target === modal) {
-            closeModal();
-        }
-    };
-});
