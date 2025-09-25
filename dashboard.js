@@ -1,3 +1,76 @@
+async function searchCandidates() {
+    const searchInput = document.getElementById('candidate-search');
+    const resultsContainer = document.getElementById('search-results');
+    const candidatesList = document.getElementById('candidates-list');
+
+    if (!searchInput || !resultsContainer || !candidatesList) {
+        console.error("One or more elements not found for candidate search.");
+        return;
+    }
+
+    const query = searchInput.value;
+    if (!query) {
+        alert('Please enter a search query.');
+        return;
+    }
+
+    // Show loading state
+    resultsContainer.style.display = 'block';
+    candidatesList.innerHTML = '<p style="color: #718096; text-align: center; padding: 20px;">Searching...</p>';
+
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('http://localhost:8000/search/candidates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.token}`
+            },
+            body: JSON.stringify({ query: query })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                renderCandidates(data.results);
+            } else {
+                candidatesList.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">Error: ${data.detail}</p>`;
+            }
+        } else {
+            const errorText = await response.text();
+            candidatesList.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">Failed to fetch results: ${errorText}</p>`;
+        }
+    } catch (error) {
+        console.error('Error searching candidates:', error);
+        candidatesList.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">An error occurred. Please try again later.</p>';
+    }
+}
+
+function renderCandidates(candidates) {
+    const candidatesList = document.getElementById('candidates-list');
+    if (!candidatesList) return;
+
+    if (candidates.length === 0) {
+        candidatesList.innerHTML = '<p style="color: #718096; text-align: center; padding: 20px;">No candidates found matching your query.</p>';
+        return;
+    }
+
+    candidatesList.innerHTML = candidates.map(candidate => `
+        <div class="candidate-card">
+            <div class="candidate-header">
+                <div class="candidate-name">${candidate.name}</div>
+            </div>
+            <div class="candidate-details">
+                <p><strong>Email:</strong> ${candidate.email}</p>
+                <p><strong>Phone:</strong> ${candidate.phone || 'N/A'}</p>
+                <p><strong>Location:</strong> ${candidate.location || 'N/A'}</p>
+                <p><strong>Experience:</strong> ${candidate.experience_level || 'N/A'}</p>
+                <p><strong>Education:</strong> ${candidate.education || 'N/A'}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
 // Dashboard initialization functions
 async function initJobseekerDashboard() {
     try {
@@ -382,18 +455,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxSalaryValue = document.getElementById('max-salary-value');
 
         minSalarySlider.addEventListener('input', () => {
-            minSalaryValue.textContent = `$${parseInt(minSalarySlider.value).toLocaleString()}`;
+            minSalaryValue.textContent = `${parseInt(minSalarySlider.value).toLocaleString()}`;
             if (parseInt(minSalarySlider.value) > parseInt(maxSalarySlider.value)) {
                 maxSalarySlider.value = minSalarySlider.value;
-                maxSalaryValue.textContent = `$${parseInt(maxSalarySlider.value).toLocaleString()}`;
+                maxSalaryValue.textContent = `${parseInt(maxSalarySlider.value).toLocaleString()}`;
             }
         });
 
         maxSalarySlider.addEventListener('input', () => {
-            maxSalaryValue.textContent = `$${parseInt(maxSalarySlider.value).toLocaleString()}`;
+            maxSalaryValue.textContent = `${parseInt(maxSalarySlider.value).toLocaleString()}`;
             if (parseInt(maxSalarySlider.value) < parseInt(minSalarySlider.value)) {
                 minSalarySlider.value = maxSalarySlider.value;
-                minSalaryValue.textContent = `$${parseInt(minSalarySlider.value).toLocaleString()}`;
+                minSalaryValue.textContent = `${parseInt(minSalarySlider.value).toLocaleString()}`;
             }
         });
 
@@ -412,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Location:</strong> ${location}</p>
                 <p><strong>Employment Type:</strong> ${employmentType}</p>
                 <p><strong>Skills:</strong> ${skills.join(', ')}</p>
-                <p><strong>Salary Range:</strong> $${parseInt(minSalary).toLocaleString()} - $${parseInt(maxSalary).toLocaleString()}</p>
+                <p><strong>Salary Range:</strong> ${parseInt(minSalary).toLocaleString()} - ${parseInt(maxSalary).toLocaleString()}</p>
                 <div><strong>Job Description:</strong> ${description}</div>
             `;
         }

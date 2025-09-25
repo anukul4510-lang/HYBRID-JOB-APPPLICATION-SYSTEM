@@ -13,6 +13,10 @@ import uvicorn
 import json
 import os
 
+from .mysql_db import create_tables
+
+create_tables()
+
 RESUME_DIR = "resumes"
 if not os.path.exists(RESUME_DIR):
     os.makedirs(RESUME_DIR)
@@ -93,7 +97,12 @@ class JobSearch(BaseModel):
     minSalary: Optional[int] = None
     maxSalary: Optional[int] = None
 
+class SearchQuery(BaseModel):
+    query: str
+
 from .mysql_db import create_connection
+from .search_engine import search
+from .vector_service import add_to_collection, candidate_profiles_collection, job_descriptions_collection
 
 # Dependency to get a database connection
 def get_db_connection():
@@ -196,6 +205,12 @@ async def register(user: RegisterUser, conn = Depends(get_db_connection)):
         
         conn.commit()
         user_id = cursor.lastrowid
+        
+        if user.userType == 'jobseeker':
+            # Add user profile to ChromaDB
+            profile_text = f"Name: {user.name}, Phone: {user.phone}, Email: {user.email}"
+            add_to_collection(candidate_profiles_collection, str(user_id), profile_text)
+
         cursor.close()
 
         token = create_access_token({"user_email": user.email, "user_type": user.userType, "user_id": user_id})
@@ -311,6 +326,15 @@ async def update_jobseeker_profile(profile: JobseekerProfile, current_user: dict
         """
         cursor.execute(update_query, (profile.name, profile.phone, profile.location, profile.experience_level, profile.education, current_user["user_email"]))
         conn.commit()
+        
+        # Update user profile in ChromaDB
+        cursor.execute("SELECT id, skills FROM users WHERE email = %s", (current_user["user_email"],))
+        user_data = cursor.fetchone()
+        user_id = user_data[0]
+        skills = json.loads(user_data[1]) if user_data[1] else []
+        profile_text = f"Name: {profile.name}, Phone: {profile.phone}, Location: {profile.location}, Experience: {profile.experience_level}, Education: {profile.education}, Skills: {', '.join(skills)}"
+        add_to_collection(candidate_profiles_collection, str(user_id), profile_text)
+
         cursor.close()
 
         return JSONResponse(content={"success": True, "message": "Profile updated successfully"})
@@ -323,7 +347,7 @@ async def update_jobseeker_skills(skills: JobseekerSkills, current_user: dict = 
         if current_user["user_type"] != "jobseeker":
             raise HTTPException(status_code=403, detail="Access denied")
 
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
         update_query = """
             UPDATE users
             SET skills = %s
@@ -331,6 +355,14 @@ async def update_jobseeker_skills(skills: JobseekerSkills, current_user: dict = 
         """
         cursor.execute(update_query, (json.dumps(skills.skills), current_user["user_email"]))
         conn.commit()
+
+        # Update user profile in ChromaDB
+        cursor.execute("SELECT id, name, phone, location, experience_level, education FROM users WHERE email = %s", (current_user["user_email"],))
+        user_data = cursor.fetchone()
+        user_id = user_data['id']
+        profile_text = f"Name: {user_data['name']}, Phone: {user_data['phone']}, Location: {user_data['location']}, Experience: {user_data['experience_level']}, Education: {user_data['education']}, Skills: {', '.join(skills.skills)}"
+        add_to_collection(candidate_profiles_collection, str(user_id), profile_text)
+
         cursor.close()
 
         return JSONResponse(content={"success": True, "message": "Skills updated successfully"})
@@ -464,6 +496,12 @@ async def post_job(
         
         cursor.execute(insert_query, (current_user["user_id"], title, location, employmentType, description, skills_str, minSalary, maxSalary))
         conn.commit()
+        job_id = cursor.lastrowid
+        
+        # Add job description to ChromaDB
+        job_text = f"Title: {title}, Location: {location}, Description: {description}, Skills: {skills_str}"
+        add_to_collection(job_descriptions_collection, str(job_id), job_text)
+
         cursor.close()
         
         return JSONResponse(content={"success": True, "message": "Job posted successfully"})
@@ -501,10 +539,15 @@ async def update_recruiter_job(job_id: int, job: Job, current_user: dict = Depen
         """
         cursor.execute(update_query, (job.title, job.location, job.employmentType, job.description, skills_str, job.minSalary, job.maxSalary, job_id, current_user["user_id"]))
         conn.commit()
-        cursor.close()
 
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Job not found or you don't have permission to update it")
+
+        # Update job description in ChromaDB
+        job_text = f"Title: {job.title}, Location: {job.location}, Description: {job.description}, Skills: {skills_str}"
+        add_to_collection(job_descriptions_collection, str(job_id), job_text)
+
+        cursor.close()
 
         return JSONResponse(content={"success": True, "message": "Job updated successfully"})
     except Exception as e:
@@ -806,5 +849,23 @@ async def update_application_status(application_id: int, status_update: Applicat
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/search/jobs")
+async def search_jobs_endpoint(query: SearchQuery, current_user: dict = Depends(verify_token)):
+    if current_user["user_type"] != "jobseeker":
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    results = search(query.query, search_type="jobs")
+    return JSONResponse(content={"success": True, "results": results})
+
+@app.post("/search/candidates")
+async def search_candidates_endpoint(query: SearchQuery, current_user: dict = Depends(verify_token)):
+    if current_user["user_type"] != "recruiter":
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    results = search(query.query, search_type="candidates")
+    return JSONResponse(content={"success": True, "results": results})
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+

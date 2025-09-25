@@ -1,5 +1,7 @@
 // script.js - Main JavaScript File
 
+let shortlistedCandidates = [];
+
 // Global variables for managing user state
 if (typeof currentUser === 'undefined') {
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
@@ -541,70 +543,68 @@ function logout() {
 }
 
 // Sample candidate data for demonstration
-if (typeof candidatesDatabase === 'undefined') {
-    const candidatesDatabase = [
-        {
-            id: 1,
-            name: "Rahul Kumar",
-            email: "rahul@email.com",
-            skills: ["Python", "Django", "Machine Learning", "SQL", "AWS"],
-            experience: "3 years",
-            location: "Bangalore",
-            education: "B.Tech Computer Science",
-            match: 95
-        },
-        {
-            id: 2,
-            name: "Priya Sharma",
-            email: "priya@email.com",
-            skills: ["React", "Node.js", "JavaScript", "MongoDB", "Express"],
-            experience: "2 years",
-            location: "Mumbai",
-            education: "MCA",
-            match: 88
-        },
-        {
-            id: 3,
-            name: "Amit Patel",
-            email: "amit@email.com",
-            skills: ["Java", "Spring Boot", "Microservices", "Docker", "Kubernetes"],
-            experience: "4 years",
-            location: "Pune",
-            education: "B.Tech IT",
-            match: 92
-        },
-        {
-            id: 4,
-            name: "Sneha Reddy",
-            email: "sneha@email.com",
-            skills: ["Python", "Flask", "Data Science", "Pandas", "NumPy"],
-            experience: "1.5 years",
-            location: "Hyderabad",
-            education: "M.Tech Data Science",
-            match: 85
-        },
-        {
-            id: 5,
-            name: "Vikash Singh",
-            email: "vikash@email.com",
-            skills: ["PHP", "Laravel", "MySQL", "HTML", "CSS", "JavaScript"],
-            experience: "3 years",
-            location: "Delhi",
-            education: "BCA",
-            match: 78
-        },
-        {
-            id: 6,
-            name: "Anita Gupta",
-            email: "anita@email.com",
-            skills: ["React Native", "Flutter", "Mobile Development", "Firebase"],
-            experience: "2.5 years",
-            location: "Chennai",
-            education: "B.Tech CSE",
-            match: 90
-        }
-    ];
-}
+const candidatesDatabase = [
+    {
+        id: 1,
+        name: "Rahul Kumar",
+        email: "rahul@email.com",
+        skills: ["Python", "Django", "Machine Learning", "SQL", "AWS"],
+        experience: "3 years",
+        location: "Bangalore",
+        education: "B.Tech Computer Science",
+        match: 95
+    },
+    {
+        id: 2,
+        name: "Priya Sharma",
+        email: "priya@email.com",
+        skills: ["React", "Node.js", "JavaScript", "MongoDB", "Express"],
+        experience: "2 years",
+        location: "Mumbai",
+        education: "MCA",
+        match: 88
+    },
+    {
+        id: 3,
+        name: "Amit Patel",
+        email: "amit@email.com",
+        skills: ["Java", "Spring Boot", "Microservices", "Docker", "Kubernetes"],
+        experience: "4 years",
+        location: "Pune",
+        education: "B.Tech IT",
+        match: 92
+    },
+    {
+        id: 4,
+        name: "Sneha Reddy",
+        email: "sneha@email.com",
+        skills: ["Python", "Flask", "Data Science", "Pandas", "NumPy"],
+        experience: "1.5 years",
+        location: "Hyderabad",
+        education: "M.Tech Data Science",
+        match: 85
+    },
+    {
+        id: 5,
+        name: "Vikash Singh",
+        email: "vikash@email.com",
+        skills: ["PHP", "Laravel", "MySQL", "HTML", "CSS", "JavaScript"],
+        experience: "3 years",
+        location: "Delhi",
+        education: "BCA",
+        match: 78
+    },
+    {
+        id: 6,
+        name: "Anita Gupta",
+        email: "anita@email.com",
+        skills: ["React Native", "Flutter", "Mobile Development", "Firebase"],
+        experience: "2.5 years",
+        location: "Chennai",
+        education: "B.Tech CSE",
+        match: 90
+    }
+];
 
 // Login page functions
 function switchUserType(type) {
@@ -840,7 +840,7 @@ async function loadRecruiterDashboard() {
         if (response.ok) {
             const data = await response.json();
             // Update dashboard with received data
-            updateRecruiterDashboard(data);
+            updateRecruiterDashboardUI(data);
         }
     } catch (error) {
         console.error('Error loading dashboard data:', error);

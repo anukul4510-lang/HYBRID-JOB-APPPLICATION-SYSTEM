@@ -12,7 +12,19 @@ def create_connection():
         db_user = os.getenv("DB_USER", "root")
         db_password = os.getenv("DB_PASSWORD", "password")
         db_name = os.getenv("DB_NAME", "job_portal_db")
-        print(f"Attempting to connect to MySQL with: Host={db_host}, User={db_user}, Password={'*' * len(db_password)}, Database={db_name}")
+
+        # Connect to MySQL server to create the database if it doesn't exist
+        conn = mysql.connector.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password
+        )
+        cursor = conn.cursor()
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+        cursor.close()
+        conn.close()
+
+        # Now connect to the specific database
         conn = mysql.connector.connect(
             host=db_host,
             user=db_user,
@@ -142,6 +154,150 @@ def create_tables():
 
     cursor.close()
     conn.close()
+
+
+def search_jobs(location=None, salary=None, experience=None, skills=None, job_type=None):
+    """Searches for jobs based on given criteria."""
+    conn = create_connection()
+    if conn is None:
+        return []
+
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT * FROM jobs WHERE 1=1"
+    params = []
+
+    if location:
+        query += " AND location LIKE %s"
+        params.append(f"%{location}%")
+    
+    if salary:
+        query += " AND (minSalary >= %s OR maxSalary >= %s)"
+        params.extend([salary, salary])
+
+    if experience:
+        # This is a simplified search. A more robust implementation would handle ranges.
+        query += " AND description LIKE %s"
+        params.append(f"%{experience} years%")
+
+    if skills:
+        for skill in skills:
+            query += " AND skills LIKE %s"
+            params.append(f"%{skill}%")
+
+    if job_type:
+        query += " AND employmentType LIKE %s"
+        params.append(f"%{job_type}%")
+
+    try:
+        cursor.execute(query, tuple(params))
+        results = cursor.fetchall()
+        return results
+    except mysql.connector.Error as err:
+        print(f"Error searching jobs: {err}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def search_candidates(location=None, skills=None):
+    """Searches for candidates based on given criteria."""
+    conn = create_connection()
+    if conn is None:
+        return []
+
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT * FROM users WHERE user_type = 'jobseeker'"
+    params = []
+
+    if location:
+        query += " AND location LIKE %s"
+        params.append(f"%{location}%")
+
+    if skills:
+        # This assumes skills are stored in a JSON array.
+        for skill in skills:
+            query += " AND JSON_CONTAINS(skills, %s)"
+            params.append(f'"{skill}"')
+
+    try:
+        cursor.execute(query, tuple(params))
+        results = cursor.fetchall()
+        return results
+    except mysql.connector.Error as err:
+        print(f"Error searching candidates: {err}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def get_jobs_by_ids(ids):
+    """Retrieves jobs by their IDs."""
+    conn = create_connection()
+    if conn is None:
+        return []
+
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT * FROM jobs WHERE id IN (%s)"
+    placeholders = ', '.join(['%s'] * len(ids))
+    query = query % placeholders
+    
+    try:
+        cursor.execute(query, tuple(ids))
+        results = cursor.fetchall()
+        return results
+    except mysql.connector.Error as err:
+        print(f"Error getting jobs by ids: {err}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def get_candidates_by_ids(ids):
+    """Retrieves candidates by their IDs."""
+    conn = create_connection()
+    if conn is None:
+        return []
+
+    cursor = conn.cursor(dictionary=True)
+    query = "SELECT * FROM users WHERE id IN (%s)"
+    placeholders = ', '.join(['%s'] * len(ids))
+    query = query % placeholders
+
+    try:
+        cursor.execute(query, tuple(ids))
+        results = cursor.fetchall()
+        return results
+    except mysql.connector.Error as err:
+        print(f"Error getting candidates by ids: {err}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def get_all_data_from_table(table_name):
+    """Retrieves all data from a specified table."""
+    conn = create_connection()
+    if conn is None:
+        return []
+
+    cursor = conn.cursor(dictionary=True)
+    query = f"SELECT * FROM {table_name}"
+    
+    try:
+        cursor.execute(query)
+        results = cursor.fetchall()
+        return results
+    except mysql.connector.Error as err:
+        print(f"Error getting all data from {table_name}: {err}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
 
 if __name__ == '__main__':
     create_tables()
