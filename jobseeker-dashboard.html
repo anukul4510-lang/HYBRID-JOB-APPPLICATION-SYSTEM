@@ -287,18 +287,39 @@
         }
         
         // Save job preferences
-        function saveJobPreferences() {
+        async function saveJobPreferences() {
             const preferredRole = document.getElementById('preferred-role').value;
             const preferredIndustry = document.getElementById('preferred-industry').value;
             const workMode = document.getElementById('work-mode').value;
             const jobType = document.getElementById('job-type').value;
             
-            // Save preferences (in real app, this would be saved to database)
-            if (currentUser) {
-                currentUser.jobPreferences = {
-                    preferredRole, preferredIndustry, workMode, jobType
-                };
-                alert('Job preferences saved successfully!');
+            const preferencesData = {
+                preferred_role: preferredRole,
+                preferred_industry: preferredIndustry,
+                work_mode: workMode,
+                job_type: jobType
+            };
+
+            try {
+                const user = JSON.parse(localStorage.getItem('currentUser'));
+                const response = await fetch('http://localhost:8000/jobseeker/preferences', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${user.token}`
+                    },
+                    body: JSON.stringify(preferencesData)
+                });
+
+                if (response.ok) {
+                    alert('Job preferences saved successfully!');
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to save job preferences: ${errorData.detail}`);
+                }
+            } catch (error) {
+                console.error('Failed to save job preferences:', error);
+                alert('An error occurred while saving your job preferences. Please try again later.');
             }
         }
         
@@ -316,7 +337,7 @@
         }
         
         // Enhanced file upload with validation
-        function handleFileUpload(event) {
+        async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 // Validate file size (5MB max)
@@ -331,15 +352,32 @@
                     alert('Invalid file type. Please upload PDF, DOC, or DOCX files only.');
                     return;
                 }
-                
-                // Simulate file processing
-                setTimeout(() => {
-                    document.getElementById('uploaded-resume').style.display = 'block';
-                    uploadedResumeData = { name: file.name, type: file.type, size: file.size };
-                    if (currentUser) {
-                        currentUser.resume = uploadedResumeData;
+
+                const formData = new FormData();
+                formData.append("file", file);
+
+                try {
+                    const user = JSON.parse(localStorage.getItem('currentUser'));
+                    const response = await fetch('http://localhost:8000/jobseeker/resume', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${user.token}`
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        document.getElementById('uploaded-resume').style.display = 'block';
+                        uploadedResumeData = { name: file.name, type: file.type, size: file.size };
+                        alert('Resume uploaded successfully!');
+                    } else {
+                        const errorData = await response.json();
+                        alert(`Failed to upload resume: ${errorData.detail}`);
                     }
-                }, 1000);
+                } catch (error) {
+                    console.error('Failed to upload resume:', error);
+                    alert('An error occurred while uploading your resume. Please try again later.');
+                }
             }
         }
         

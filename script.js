@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('submit', function(event) {
             if (event.target.id === 'registration-form') {
                 event.preventDefault();
-                const type = document.getElementById('register-modal').dataset.userType;
+        const type = document.getElementById('register-modal').dataset.userType;
                 registerUser(event, type);
             }
         });
@@ -252,7 +252,7 @@ async function loginUser(event, userType) {
             password: password,
             userType: userType
         };
-        console.log('Sending login request with data:', loginData);
+        //console.log('Sending login request with data:', loginData);
         
         const response = await fetch('http://localhost:8000/login', {
             method: 'POST',
@@ -997,25 +997,68 @@ function clearShortlist() {
 }
 
 // Job Seeker Dashboard Functions
-function saveProfile() {
+async function saveProfile() {
     const name = document.getElementById('user-name').value;
     const phone = document.getElementById('user-phone').value;
     const location = document.getElementById('user-location').value;
     const experience = document.getElementById('user-experience').value;
     const education = document.getElementById('user-education').value;
-    const currentRole = document.getElementById('user-current-role').value;
     
     if (!name || !phone || !location) {
         alert('Please fill in all required fields');
         return;
     }
     
-    // Save to current user object (in real app, this would be saved to database)
-    currentUser.profile = {
-        name, phone, location, experience, education, currentRole
+    const profileData = {
+        name: name,
+        phone: phone,
+        location: location,
+        experience_level: experience,
+        education: education
     };
-    
-    alert('Profile saved successfully!');
+
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('http://localhost:8000/jobseeker/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.token}`
+            },
+            body: JSON.stringify(profileData)
+        });
+
+        if (response.ok) {
+            alert('Profile saved successfully!');
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to save profile: ${errorData.detail}`);
+        }
+    } catch (error) {
+        console.error('Failed to save profile:', error);
+        alert('An error occurred while saving your profile. Please try again later.');
+    }
+}
+
+async function saveSkills() {
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const response = await fetch('http://localhost:8000/jobseeker/skills', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${user.token}`
+            },
+            body: JSON.stringify({ skills: userSkills })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error(`Failed to save skills: ${errorData.detail}`);
+        }
+    } catch (error) {
+        console.error('Failed to save skills:', error);
+    }
 }
 
 function addSkill() {
@@ -1034,7 +1077,8 @@ function addSkill() {
     
     userSkills.push(skill);
     skillInput.value = '';
-    displaySkills();}
+    displaySkills();
+    saveSkills();}
 
 function displaySkills() {
     const container = document.getElementById('skills-display');
@@ -1066,6 +1110,7 @@ function displaySkills() {
 function removeSkill(index) {
     userSkills.splice(index, 1);
     displaySkills();
+    saveSkills();
 }
 
 function triggerFileUpload() {

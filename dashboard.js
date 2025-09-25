@@ -419,25 +419,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         multiStepForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const jobData = {
-                title: document.getElementById('multi-job-title').value,
-                location: document.getElementById('multi-location').value,
-                employmentType: document.getElementById('multi-employment-type').value,
-                description: editor.root.innerHTML,
-                skills: skills,
-                minSalary: minSalarySlider.value,
-                maxSalary: maxSalarySlider.value,
-            };
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('multi-job-title').value);
+            formData.append('location', document.getElementById('multi-location').value);
+            formData.append('employmentType', document.getElementById('multi-employment-type').value);
+            formData.append('description', editor.root.innerHTML);
+            formData.append('skills', JSON.stringify(skills));
+            formData.append('minSalary', minSalarySlider.value);
+            formData.append('maxSalary', maxSalarySlider.value);
 
             try {
                 const user = JSON.parse(localStorage.getItem('currentUser'));
                 const response = await fetch('http://localhost:8000/recruiter/jobs', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${user.token}`
                     },
-                    body: JSON.stringify(jobData)
+                    body: formData
                 });
 
                 if (response.ok) {
