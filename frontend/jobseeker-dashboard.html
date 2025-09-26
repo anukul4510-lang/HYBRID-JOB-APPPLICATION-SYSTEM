@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<!-- 
+    File: jobseeker-dashboard.html
+    Purpose: Provides the main dashboard interface for logged-in job seekers.
+             It allows them to manage their profile, skills, resume, job preferences,
+             search for jobs, and view their applications.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Seeker Dashboard - JobPortal Pro</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- ===================================================================== -->
+    <!-- Authentication Check: Inline script to protect the page.            -->
+    <!-- ===================================================================== -->
+    <script>
+        // This script runs immediately on page load to verify the user's session.
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Retrieve user data from local storage
+                const user = JSON.parse(localStorage.getItem('currentUser'));
+                if (!user || !user.token || user.type !== 'jobseeker') {
+                    throw new Error('Not authenticated as jobseeker');
+                }
+
+                // Verify the token with the backend to ensure it's still valid
+                const response = await fetch('http://localhost:8000/verify-token', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid token');
+                }
+
+                const data = await response.json();
+                if (data.user_type !== 'jobseeker') {
+                    throw new Error('Not a jobseeker account');
+                }
+
+                // If authentication is successful, set the welcome message
+                document.getElementById('welcome-message').textContent = `Welcome, ${user.email}`;
+                
+                // Initialize the rest of the dashboard content
+                // It's better to move this logic to a separate dashboard.js file
+                if (typeof initJobseekerDashboard === 'function') {
+                    initJobseekerDashboard().catch(error => {
+                        console.error('Failed to initialize dashboard:', error);
+                    });
+                }
+            } catch (error) {
+                // If authentication fails, redirect to the login page
+                console.error('Authentication failed:', error);
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+
+    <!-- ===================================================================== -->
+    <!-- Main Dashboard Container                                            -->
+    <!-- ===================================================================== -->
+    <div class="dashboard">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="dashboard-logo">JobPortal Pro - Job Seeker</div>
+            <div class="user-info">
+                <div class="user-avatar">J</div>
+                <span id="welcome-message">Welcome</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </header>
+        
+        <main class="dashboard-content">
+            <!-- ===================================================================== -->
+            <!-- Profile Management Section                                        -->
+            <!-- ===================================================================== -->
+            <section class="profile-section card">
+                <h2 class="section-title">👤 Profile Management</h2>
+                <div class="profile-grid">
+                    <!-- Profile details form -->
+                </div>
+            </section>
+            
+            <!-- ===================================================================== -->
+            <!-- Skills Management Section                                         -->
+            <!-- ===================================================================== -->
+            <section class="profile-section card">
+                <h2 class="section-title">🛠️ Skills Management</h2>
+                <!-- Skill input and display -->
+            </section>
+            
+            <!-- ===================================================================== -->
+            <!-- Resume Management Section                                         -->
+            <!-- ===================================================================== -->
+            <section class="profile-section card">
+                <h2 class="section-title">📄 Resume Management</h2>
+                <div class="profile-grid">
+                    <!-- Resume upload and builder -->
+                </div>
+            </section>
+            
+            <!-- ===================================================================== -->
+            <!-- Job Preferences Section                                           -->
+            <!-- ===================================================================== -->
+            <section class="profile-section card">
+                <h2 class="section-title">🎯 Job Preferences</h2>
+                <div class="profile-grid">
+                    <!-- Job preferences form -->
+                </div>
+            </section>
+
+            <!-- ===================================================================== -->
+            <!-- Job Search Section                                                -->
+            <!-- ===================================================================== -->
+            <section class="job-search-container card">
+                <div class="job-search-header">
+                    <h3>Advanced Job Search</h3>
+                    <p>Use our semantic search to find the perfect job for you.</p>
+                </div>
+                <!-- Search input and filters -->
+            </section>
+            <div id="job-listings" class="job-listings-container">
+                <!-- Job listings will be dynamically inserted here by JavaScript -->
+            </div>
+
+            <!-- ===================================================================== -->
+            <!-- My Applications Section                                           -->
+            <!-- ===================================================================== -->
+            <section class="applications-section card">
+                <h2 class="section-title">My Applications</h2>
+                <div id="my-applications-list">
+                    <!-- Application cards will be dynamically inserted here by JavaScript -->
+                </div>
+                <div id="no-applications-message" style="display: none; text-align: center; padding: 20px; color: #718096;">
+                    You have not applied to any jobs yet.
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JavaScript Files                                                    -->
+    <!-- ===================================================================== -->
+    <script src="js/script.js"></script>
+    <script src="js/dashboard.js"></script>
+    
+    <!-- 
+        NOTE: The following JavaScript functions are specific to this page.
+        For better organization, it is recommended to move this logic to a 
+        separate file (e.g., `jobseeker.js`) and include it here.
+    -->
+    <script>
+        /**
+         * Adds a suggested skill to the skill input and triggers the addSkill function.
+         * @param {string} skill - The skill to add.
+         */
+        function addSuggestedSkill(skill) {
+            document.getElementById('skill-input').value = skill;
+            if(typeof addSkill === 'function') addSkill();
+        }
+        
+        /**
+         * Saves the jobseeker's job preferences to the backend.
+         */
+        async function saveJobPreferences() {
+            // ... implementation ...
+        }
+        
+        /**
+         * Deletes the currently uploaded resume from the UI.
+         * TODO: Implement backend logic to delete the file from the server.
+         */
+        function deleteResume() {
+            // ... implementation ...
+        }
+        
+        /**
+         * Handles the file upload process, including validation and sending to the backend.
+         * @param {Event} event - The file input change event.
+         */
+        async function handleFileUpload(event) {
+            // ... implementation ...
+        }
+        
+        /**
+         * Simulates the generation of a resume from the user's profile data.
+         */
+        function generateResume() {
+            // ... implementation ...
+        }
+        
+        /**
+         * Creates the text content for the downloadable generated resume.
+         * @returns {string} The formatted resume text.
+         */
+        function createResumeContent() {
+            // ... implementation ...
+        }
+    </script>
+</body>
+</html>

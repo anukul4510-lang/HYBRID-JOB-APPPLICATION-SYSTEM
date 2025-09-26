@@ -1,13 +1,22 @@
 <!DOCTYPE html>
+<!-- 
+    File: index.html
+    Purpose: The main landing and login page for the JobPortal Pro application.
+             It features a tabbed interface for job seekers and recruiters to log in
+             or access the registration form.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JobPortal Pro - Login</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Slideshow Section -->
+
+    <!-- ===================================================================== -->
+    <!-- Slideshow Section: A decorative, animated background element.         -->
+    <!-- ===================================================================== -->
     <div id="slideshow" class="slideshow">
         <div class="slide-decorations">
             <div class="decoration-circle circle-1"></div>
@@ -22,13 +31,20 @@
             <div class="pulse-circle"></div>
         </div>
     </div>
+
+    <!-- ===================================================================== -->
+    <!-- Main Content Container                                                -->
+    <!-- ===================================================================== -->
     <div class="container">
         <div class="login-wrapper">
+
+            <!-- Logo and Tagline Section -->
             <div class="logo-section">
                 <h1 class="logo">JobPortal Pro</h1>
                 <p class="tagline">Connect Talent with Opportunity</p>
             </div>
             
+            <!-- Login Form Selector (Tabs for Job Seeker and Recruiter) -->
             <div class="login-selector">
                 <div class="user-type-tabs">
                     <button class="tab-btn active" id="jobseeker-tab">
@@ -41,7 +57,9 @@
                     </button>
                 </div>
 
-                <!-- Job Seeker Login Form -->
+                <!-- --------------------------------- -->
+                <!-- Job Seeker Login Form             -->
+                <!-- --------------------------------- -->
                 <div id="jobseeker-form" class="login-form active">
                     <h2>Job Seeker Login</h2>
                     <form id="jobseeker-login-form">
@@ -61,7 +79,9 @@
                     </div>
                 </div>
 
-                <!-- Recruiter Login Form -->
+                <!-- --------------------------------- -->
+                <!-- Recruiter Login Form              -->
+                <!-- --------------------------------- -->
                 <div id="recruiter-form" class="login-form">
                     <h2>Recruiter/Company Login</h2>
                     <form id="recruiter-login-form">
@@ -84,16 +104,22 @@
         </div>
     </div>
 
-    <!-- Registration Modal -->
+    <!-- ===================================================================== -->
+    <!-- Registration Modal: A pop-up dialog for user registration.          -->
+    <!-- The content is dynamically inserted by script.js.                   -->
+    <!-- ===================================================================== -->
     <div id="register-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
             <div id="register-form-container">
-                <!-- Registration forms will be inserted here -->
+                <!-- Registration form content will be dynamically inserted here by JavaScript -->
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- ===================================================================== -->
+    <!-- JavaScript Files                                                    -->
+    <!-- ===================================================================== -->
+    <script src="js/script.js"></script>
 </body>
 </html>

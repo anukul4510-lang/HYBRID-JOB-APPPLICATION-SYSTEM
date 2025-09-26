@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!-- 
+    File: recruiter-dashboard.html
+    Purpose: Provides the main dashboard interface for logged-in recruiters.
+             It allows them to search for candidates using AI, manage a shortlist,
+             post new job vacancies, and review incoming applications.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruiter Dashboard - JobPortal Pro</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- External library for the rich text editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ===================================================================== -->
+    <!-- Initialization Script: Ensures the dashboard is set up on page load. -->
+    <!-- ===================================================================== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // The main initialization function (defined in dashboard.js) is called here.
+            // It handles authentication, data fetching, and setting up event listeners.
+            if (typeof initRecruiterDashboard === 'function') {
+                initRecruiterDashboard().catch(error => {
+                    console.error('Failed to initialize dashboard:', error);
+                    // Redirect to login if initialization fails
+                    window.location.href = 'index.html';
+                });
+            }
+        });
+    </script>
+
+    <!-- ===================================================================== -->
+    <!-- Main Dashboard Container                                            -->
+    <!-- ===================================================================== -->
+    <div class="dashboard">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="dashboard-logo">JobPortal Pro - Recruiter</div>
+            <div class="user-info">
+                <div class="user-avatar">R</div>
+                <span id="welcome-message">Welcome</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </header>
+        
+        <main class="dashboard-content">
+
+            <!-- ===================================================================== -->
+            <!-- AI-Powered Candidate Search Section                               -->
+            <!-- ===================================================================== -->
+            <section class="search-container card">
+                <h2 class="search-title">🔍 AI-Powered Candidate Search</h2>
+                <p>Use natural language to describe your ideal candidate. Our AI will find matching profiles.</p>
+                <input type="text" id="candidate-search" class="search-box" placeholder="e.g., 'Python programmer with machine learning skills in fintech'">
+                <button class="search-btn" onclick="searchCandidates()">🚀 AI Search</button>
+            </section>
+            
+            <!-- ===================================================================== -->
+            <!-- Search Results Section                                            -->
+            <!-- ===================================================================== -->
+            <section id="search-results" class="results-container card" style="display: none;">
+                <h3>🎯 AI Search Results</h3>
+                <div id="candidates-list">
+                    <!-- Candidate profiles will be dynamically inserted here -->
+                </div>
+            </section>
+            
+            <!-- ===================================================================== -->
+            <!-- Shortlisted Candidates Section                                    -->
+            <!-- ===================================================================== -->
+            <section class="shortlist-table card">
+                <div class="table-header">
+                    <h3>📋 Shortlisted Candidates</h3>
+                    <div>
+                        <button class="search-btn" onclick="exportShortlist()">📁 Export</button>
+                        <button class="clear-table-btn" onclick="clearShortlist()">Clear All</button>
+                    </div>
+                </div>
+                <div id="shortlist-container">
+                    <!-- Shortlisted candidates will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- ===================================================================== -->
+            <!-- Job Posting Section                                               -->
+            <!-- ===================================================================== -->
+            <section class="create-job-section card">
+                <h2>Post and Manage Job Vacancies</h2>
+                <p>Click the button below to create a new job posting and find the perfect candidate.</p>
+                <button class="search-btn" id="create-job-btn">Create New Job Posting</button>
+            </section>
+
+            <!-- ===================================================================== -->
+            <!-- Received Applications Section                                     -->
+            <!-- ===================================================================== -->
+            <section class="applications-section card">
+                <h2 class="section-title">📄 Received Applications</h2>
+                <div id="applications-list">
+                    <!-- Applications will be dynamically inserted here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- Post Job Modal: A multi-step form for creating a new job posting.   -->
+    <!-- ===================================================================== -->
+    <div id="post-job-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-btn" id="close-modal-btn">&times;</span>
+            <h2 class="post-job-title">Create New Job Posting</h2>
+            <div class="multi-step-form">
+                <!-- Step indicators for the form -->
+                <div class="step-indicators">
+                    <span class="step-indicator active" data-step="1">Job Details</span>
+                    <span class="step-indicator" data-step="2">Skills & Salary</span>
+                    <span class="step-indicator" data-step="3">Review & Publish</span>
+                </div>
+                <form id="multi-step-job-form">
+                    <!-- Form steps will be displayed here -->
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JavaScript Files                                                    -->
+    <!-- ===================================================================== -->
+    <!-- Rich text editor library -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <!-- Main application logic -->
+    <script src="js/script.js"></script>
+    <!-- Dashboard-specific logic -->
+    <script src="js/dashboard.js"></script>
+
+    <!-- 
+        NOTE: The following JavaScript functions are specific to this page.
+        For better organization, it is recommended to move this logic to a 
+        separate file (e.g., `recruiter.js`).
+    -->
+    <script>
+        /**
+         * Populates the search input with a predefined template.
+         * @param {string} template - The search query template.
+         */
+        function useTemplate(template) {
+            document.getElementById('candidate-search').value = template;
+        }
+        
+        /**
+         * Exports the list of shortlisted candidates to a CSV file.
+         */
+        function exportShortlist() {
+            // ... implementation ...
+        }
+    </script>
+</body>
+</html>
